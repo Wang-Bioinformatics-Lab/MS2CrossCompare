@@ -51,7 +51,7 @@ The output is a TSV file with the following columns:
 
 ---
 
-# Nextflow Template
+## Workflow Download and Test
 Make sure to have the NextflowModule updated if you plan on using it:
 
 ```
