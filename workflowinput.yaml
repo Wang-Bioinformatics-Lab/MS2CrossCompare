@@ -1,21 +1,71 @@
-workflowname: template_nextflow_workflow
-workflowdescription: template_nextflow_workflow
-workflowlongdescription: This is a template nextflow workflow for GNPS2
-workflowversion: "2025.06.20"
+workflowname: ms2crosscompare_workflow
+workflowdescription: MS2 spectra cross-comparison workflow
+workflowlongdescription: Cross-compare all spectra between two folders using fast indexing and cosine similarity.
+workflowversion: "2025.07.18"
 workflowfile: nf_workflow.nf
 workflowautohide: false
 adminonly: false
-#This maps the parameters from an input form to those that will appear in nextflow
+
 parameterlist:
     - displayname: File Selection
       paramtype: section
 
-    - displayname: Input Data Folder
+    - displayname: Input Folder 1
       paramtype: fileselector
-      nf_paramname: input_spectra
-      formplaceholder: Enter the path to data
+      nf_paramname: inputspectra1
+      formplaceholder: Enter the Input Folder 1
       formvalue: ""
-      targettaskfolder: input_spectra
+      targettaskfolder: inputspectra1
       optional: false
       selectsinglefile: false
       folderunroll: true
+
+    - displayname: Input Folder 2
+      paramtype: fileselector
+      nf_paramname: inputspectra2
+      formplaceholder: Enter the Input Folder 2
+      formvalue: ""
+      targettaskfolder: inputspectra2
+      optional: false
+      selectsinglefile: false
+      folderunroll: true
+
+    - displayname: MS2 Tolerance (Da)
+      paramtype: text
+      nf_paramname: tolerance
+      formvalue: "0.01"
+      optional: false
+
+    - displayname: Cosine Similarity Threshold
+      paramtype: text
+      nf_paramname: threshold
+      formvalue: "0.7"
+      optional: false
+
+    - displayname: Minimum Matched Peaks
+      paramtype: text
+      nf_paramname: minmatches
+      formvalue: "6"
+      optional: false
+
+    - displayname: Alignment Strategy
+      paramtype: select
+      nf_paramname: alignment_strategy
+      formvalue: index_single_charge
+      options:
+        - value: index_single_charge
+          display: index_single_charge
+        - value: index_multi_charge
+          display: index_multi_charge
+      optional: false
+
+    - displayname: Enable Peak Filtering
+      paramtype: select
+      nf_paramname: enable_peak_filtering
+      formvalue: "no"
+      options:
+        - value: "no"
+          display: "no"
+        - value: "yes"
+          display: "yes"
+      optional: false

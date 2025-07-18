@@ -1,23 +1,20 @@
-name: template_nextflow_workflow
-displayname: STUFF
+name: ms2crosscompare_workflow
+displayname: MS2CrossCompare Results
 Views:
--   name: Summary List
-    displayname: Summary List
-    viewname: summarylist
+-   name: Cross Compare Results
+    displayname: Cross Compare Results
+    viewname: crosscompare
     displaytype: datatable
     parameters:
-        filename: nf_output/python_output.tsv
+        filename: nf_output/cross_compare_results.tsv
         columns:
-            -   title: "View LCMS"
-                data: filename
-            -   title: "filename"
-                data: filename
-            -   title: "OUTPUT"
-                data: OUTPUT
-            -   title: "OUTPUT2"
-                data: OUTPUT2
-        columnDefs: '[ {"targets": 0,"data": null,"render": function ( data, type, row, meta ) {
-            return `
-            <a target="_blank" href="/dashboards/lcms?usi=mzspec:GNPS2-${task}:${encodeURIComponent(row["filename"])}">View LCMS - mzspec:GNPS2-${task}:${row["filename"]}</a>
-            `;}}]'
+            -   title: "Set 1"
+                data: set1
+            -   title: "Set 2"
+                data: set2
+            -   title: "Delta MZ"
+                data: delta_mz
+            -   title: "Cosine"
+                data: cosine
+        columnDefs: '[{"targets": [0,1,2,3]}]'
             
