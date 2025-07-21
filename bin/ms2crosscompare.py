@@ -32,59 +32,43 @@ import numba
 
 
 @numba.njit
-def compute_cross_comparisons(folder1_spectra, folder2_spectra, shared_entries, shifted_entries, tolerance, threshold, scoring_func, minmatches=6):
-    """
-    Numba-optimized cross-comparison between two sets of spectra
-    Returns: List of (query_idx, target_idx, score) tuples
-    """
+def compute_cross_comparisons(folder1_spectra, folder2_spectra, shared_entries, shifted_entries, tolerance, threshold, scoring_func, minmatches=6, max_shift=1000.0):
     results = NumbaList()
-    
     for query_idx in range(len(folder1_spectra)):
         query_spec = folder1_spectra[query_idx]
+        precursor_mz_query = query_spec[2]
         upper_bounds = np.zeros(len(folder2_spectra), dtype=np.float32)
         match_counts = np.zeros(len(folder2_spectra), dtype=np.int32)
-        
-        # Process both shared and shifted peaks
         for peak_idx in range(len(query_spec[0])):
             mz = query_spec[0][peak_idx]
             intensity = query_spec[1][peak_idx]
             precursor_mz = query_spec[2]
-            
-            # Shared peaks processing
             shared_bin = np.int64(round(mz / tolerance))
             shifted_bin = np.int64(round((precursor_mz - mz + SHIFTED_OFFSET) / tolerance))
-            
-            # Check both shared and shifted entries
             for entries, bin_val in [(shared_entries, shared_bin), (shifted_entries, shifted_bin)]:
                 for delta in ADJACENT_BINS:
                     target_bin = bin_val + delta
                     start, end = find_bin_range(entries, target_bin)
-                    
-                    # Find matches in this bin
                     pos = start
                     while pos < end and entries[pos][0] == target_bin:
                         spec_idx = entries[pos][1]
-                        # The entries are for folder2_spectra, so spec_idx directly corresponds to target_idx
-                        target_idx = spec_idx
-                        upper_bounds[target_idx] += intensity * entries[pos][4]
-                        match_counts[target_idx] += 1
+                        precursor_mz_target = folder2_spectra[spec_idx][2]
+                        if abs(precursor_mz_query - precursor_mz_target) > max_shift:
+                            pos += 1
+                            continue
+                        upper_bounds[spec_idx] += intensity * entries[pos][4]
+                        match_counts[spec_idx] += 1
                         pos += 1
-        
-        # Collect candidates using threshold parameter
         candidates = NumbaList()
         for target_idx in range(len(folder2_spectra)):
             if (upper_bounds[target_idx] >= threshold and 
                 match_counts[target_idx] >= minmatches):
                 candidates.append((target_idx, upper_bounds[target_idx]))
-        
-        # Process top candidates for exact matching
-        for target_idx, _ in candidates[:TOPPRODUCTS * 2]:
+        for target_idx, _ in candidates:
             target_spec = folder2_spectra[target_idx]
             score, shared, shifted = scoring_func(query_spec, target_spec, tolerance)
-            
             if score >= threshold:
                 results.append((query_idx, target_idx, score))
-    
     return results
 
 
@@ -144,7 +128,8 @@ def cross_compare_folders(
     threads: int = 1,
     alignment_strategy: str = "index_single_charge",
     enable_peak_filtering: bool = False,
-    minmatches: int = 6
+    minmatches: int = 6,
+    max_shift: float = 1000.0
 ) -> List[Tuple]:
     """
     Compare all spectra from folder1 against all spectra from folder2
@@ -217,7 +202,7 @@ def cross_compare_folders(
     
     # Use the optimized cross-comparison function
     matches = compute_cross_comparisons(folder1_numba, folder2_numba, shared_idx, shifted_idx,
-                                       tolerance, threshold, scoring_func, minmatches)
+                                       tolerance, threshold, scoring_func, minmatches, max_shift)
     
     # Convert matches to results with metadata
     results = []
@@ -240,12 +225,27 @@ def cross_compare_folders(
 
 
 def write_results(results: List[Tuple], output_file: str):
-    """Write results to TSV file"""
+    """Write results to TSV file with filename and scan split at the last underscore."""
     print(f"Writing results to {output_file}...")
     with open(output_file, 'w') as f:
-        f.write("set1\tset2\tdelta_mz\tcosine\n")
+        f.write("set1_filename\tset1_scan\tset2_filename\tset2_scan\tdelta_mz\tcosine\n")
         for cluster1, cluster2, delta_mz, cosine in results:
-            f.write(f"{cluster1}\t{cluster2}\t{delta_mz:.3f}\t{cosine:.4f}\n")
+            # Split cluster_id at the last underscore to get filename and scan
+            if "_" in cluster1:
+                idx = cluster1.rfind("_")
+                set1_filename = cluster1[:idx]
+                set1_scan = cluster1[idx+1:]
+            else:
+                set1_filename = cluster1
+                set1_scan = ""
+            if "_" in cluster2:
+                idx = cluster2.rfind("_")
+                set2_filename = cluster2[:idx]
+                set2_scan = cluster2[idx+1:]
+            else:
+                set2_filename = cluster2
+                set2_scan = ""
+            f.write(f"{set1_filename}\t{set1_scan}\t{set2_filename}\t{set2_scan}\t{delta_mz:.3f}\t{cosine:.4f}\n")
     print(f"Wrote {len(results)} results to {output_file}")
 
 
@@ -269,6 +269,7 @@ def parse_arguments():
     parser.add_argument("--enable_peak_filtering", type=str, default="no",
                     help="Enable peak filtering: yes/no (default: no)")
     parser.add_argument("--minmatches", type=int, default=6, help="Minimum number of matched peaks (default: 6)")
+    parser.add_argument("--max_shift", type=float, default=1000.0, help="Maximum allowed precursor m/z difference for comparison (default: 1000.0)")
     return parser.parse_args()
 
 
@@ -287,6 +288,7 @@ def main():
     print(f"Alignment strategy: {args.alignment_strategy}")
     print(f"Peak filtering: {args.enable_peak_filtering}")
     print(f"Minimum matches: {args.minmatches}")
+    print(f"Maximum allowed precursor m/z difference: {args.max_shift}")
     print("-" * 50)
     
     try:
@@ -299,7 +301,8 @@ def main():
             threads=args.threads,
             alignment_strategy=args.alignment_strategy,
             enable_peak_filtering=args.enable_peak_filtering,
-            minmatches=args.minmatches
+            minmatches=args.minmatches,
+            max_shift=args.max_shift
         )
         
         # Write results

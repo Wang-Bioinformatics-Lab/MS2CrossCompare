@@ -11,6 +11,7 @@ params.enable_peak_filtering = "no"
 params.output = "cross_compare_results.tsv"
 params.publishdir = "$launchDir"
 params.minmatches = 6
+params.max_shift = 1000.0
 TOOL_FOLDER = "$moduleDir/bin"
 MODULES_FOLDER = "$TOOL_FOLDER/NextflowModules"
 
@@ -43,6 +44,7 @@ process ms2CrossCompare {
     val alignment_strategy
     val enable_peak_filtering
     val minmatches
+    val max_shift
     val output_file
 
     output:
@@ -57,6 +59,7 @@ process ms2CrossCompare {
         --alignment_strategy $alignment_strategy \
         --enable_peak_filtering $enable_peak_filtering \
         --minmatches $minmatches \
+        --max_shift $max_shift \
         --output $output_file
     """
 }
@@ -75,6 +78,7 @@ workflow Main {
         input_map.alignment_strategy,
         input_map.enable_peak_filtering,
         input_map.minmatches,
+        input_map.max_shift,
         input_map.output
     )
 
@@ -97,7 +101,8 @@ workflow {
         alignment_strategy: params.alignment_strategy,
         enable_peak_filtering: params.enable_peak_filtering,
         output: params.output,
-        minmatches: params.minmatches
+        minmatches: params.minmatches,
+        max_shift: params.max_shift
     ]
     out = Main(input_map)
     out.view()

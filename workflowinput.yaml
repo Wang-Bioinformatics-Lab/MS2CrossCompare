@@ -1,7 +1,7 @@
 workflowname: ms2crosscompare_workflow
 workflowdescription: MS2 spectra cross-comparison workflow
 workflowlongdescription: Cross-compare all spectra between two folders using fast indexing and cosine similarity.
-workflowversion: "2025.07.18"
+workflowversion: "2025.07.21"
 workflowfile: nf_workflow.nf
 workflowautohide: false
 adminonly: false
@@ -46,6 +46,12 @@ parameterlist:
       paramtype: text
       nf_paramname: minmatches
       formvalue: "6"
+      optional: false
+
+    - displayname: Maximum Precursor m/z Difference (Da)
+      paramtype: text
+      nf_paramname: max_shift
+      formvalue: "1000.0"
       optional: false
 
     - displayname: Alignment Strategy

@@ -8,13 +8,17 @@ Views:
     parameters:
         filename: nf_output/cross_compare_results.tsv
         columns:
-            -   title: "Set 1"
-                data: set1
-            -   title: "Set 2"
-                data: set2
+            -   title: "Set 1 Filename"
+                data: set1_filename
+            -   title: "Set 1 Scan"
+                data: set1_scan
+            -   title: "Set 2 Filename"
+                data: set2_filename
+            -   title: "Set 2 Scan"
+                data: set2_scan
             -   title: "Delta MZ"
                 data: delta_mz
             -   title: "Cosine"
                 data: cosine
-        columnDefs: '[{"targets": [0,1,2,3]}]'
+        columnDefs: '[{"targets": [0,1,2,3,4,5]}]'
             
